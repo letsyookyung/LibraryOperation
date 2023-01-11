@@ -1,8 +1,8 @@
 package ivy.libraryoperation.model;
+import java.time.LocalDateTime
+import java.util.Date
 
-import java.sql.Date
-
-data class PurchaseBookHistoryInfo(
+data class PurchaseBookHistoryModel(
 
     val date: Date,
 
@@ -14,6 +14,6 @@ data class PurchaseBookHistoryInfo(
 
     val price: Int,
 
-    var totalBalance: Int = 20000
+    val remainingTotalBalance: Int,
 
-)
+    )

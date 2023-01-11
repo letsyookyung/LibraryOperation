@@ -3,9 +3,15 @@ POST http://localhost:8888/manager/purchase-book
 Content-Type: application/json
 
 {
-  "name" : "kotlin",
-  "author" : "ivy",
-  "price" : 12000,
+  "name" : "python",
+  "author" : "babab",
+  "price" : 20000,
   "checkOutStatus" : false
 }
 
+### GET "purchase book history"
+GET http://localhost:8888/manager/purchase-book/history
+
+
+### POST "set total balance"
+POST http://localhost:8888/manager/purchase-book/set-total-balance?deposit=200000

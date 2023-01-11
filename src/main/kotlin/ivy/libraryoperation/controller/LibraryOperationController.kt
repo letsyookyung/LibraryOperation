@@ -1,7 +1,7 @@
 package ivy.libraryoperation.controller
 
-import ivy.libraryoperation.model.BookInfo
-import ivy.libraryoperation.model.PurchaseBookHistoryInfo
+import ivy.libraryoperation.model.BookInfoModel
+import ivy.libraryoperation.model.PurchaseBookHistoryModel
 import ivy.libraryoperation.service.PurchaseBookService
 import org.springframework.web.bind.annotation.*
 
@@ -9,11 +9,7 @@ import org.springframework.web.bind.annotation.*
 //@RequestMapping("/mode")
 class LibraryOperationController (
     private val purchaseBookService: PurchaseBookService
-
 ) {
-
-    @GetMapping("/") // http://localhost:8888?name=John
-    fun index(@RequestParam("name") name: String) = "Hello, $name!"
 
     // manager mode
 //    @GetMapping("/manager/check-book-list")
@@ -21,19 +17,17 @@ class LibraryOperationController (
 //    @PostMapping("/manager/update-book-list")
 
 //    @PostMapping("/manager/purchase-book") //http://localhost:8888/manager/purchase-book
+
+    @PostMapping("/manager/purchase-book/set-total-balance")
+    fun set(@RequestParam deposit: Int) = purchaseBookService.depositIntoAccount(deposit)
+
     @PostMapping("/manager/purchase-book") //http://localhost:8888/manager/purchase-book
-    fun purchaseBook(@RequestBody bookInfo: BookInfo) {
-//        if ((purchaseBookHistoryInfo.totalBalance - bookInfo.price) <= 0) {
-//            throw RuntimeException("도서 가격 비쌈")
-//        }
-        purchaseBookService.addInPurchaseHistory(bookInfo)
-        purchaseBookService.addInBookList(bookInfo)
-    }
+    fun purchase(@RequestBody bookInfo: BookInfoModel): BookInfoModel = purchaseBookService.purchaseBook(bookInfo)
 
     @GetMapping("/manager/purchase-book/history")
-    fun checkPurchaseBookHistory() {
-        purchaseBookService.findPurchaseHistory()
-    }
+    fun getHistory(): List<PurchaseBookHistoryModel> = purchaseBookService.findPurchaseHistory()
+
+
 
 
     // member mode

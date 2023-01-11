@@ -1,6 +1,6 @@
 package ivy.libraryoperation.model;
 
-data class BookInfo(
+data class BookInfoModel(
         val name: String,
 
         val author: String,

@@ -44,8 +44,16 @@ create table if not exists Library.purchaseHistory
     bookName text     not null,
     author   text     not null,
     price    int      not null,
+    remainingTotalBalance int    not null,
     constraint purchaseHistory_pk
         unique (bookId)
+);
+
+create table if not exists Library.totalBalance
+(
+    date    datetime not null,
+    totalBalance int not null
+
 );
 
 
