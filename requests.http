@@ -1,0 +1,11 @@
+### Post "purcahse-book"
+POST http://localhost:8888/manager/purchase-book
+Content-Type: application/json
+
+{
+  "name" : "kotlin",
+  "author" : "ivy",
+  "price" : 12000,
+  "checkOutStatus" : false
+}
+
