@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-class PurchaseBookService (val db: JdbcTemplate) {
+class PurchaseBookService (private val db: JdbcTemplate) {
 
     fun depositIntoAccount(deposit: Int) {
         val today = LocalDateTime.now()
