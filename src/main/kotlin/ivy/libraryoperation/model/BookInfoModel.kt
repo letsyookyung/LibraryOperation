@@ -5,7 +5,7 @@ data class BookInfoModel(
 
         val author: String?,
 
-        var checkOutStatus: Boolean = false
+        var isAvailableToCheckOut: Boolean = true
 ) {
 
         var price: Int = 0

@@ -6,18 +6,40 @@ import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 
 @Service
-class UpdateBookListService (private val db: JdbcTemplate){
-    fun checkOut(memberLoginId: String, bookInfo: BookInfoModel)  {
-        val memberId = db.query("select memberId from members where loginId = $memberLoginId") {
-                response, _ -> response.getInt("memberId")}[0]
-        val bookId = db.query("select bookId from purchaseHistory where bookName = ${bookInfo.name}") {
-                response,_ -> response.getInt("bookId")}[0] // 우선 중복되는 책 없다고 간주
+class UpdateBookListService (
+    private val db: JdbcTemplate,
+    private val commonService: CommonService
+){
+    fun checkOutBook(memberLoginId: String, bookName: String) {
+        val results = commonService.findMatchingNumberedID(memberLoginId, bookName)
 
-        db.update("update bookList SET checkOutStatus = true where bookName = ${bookInfo.name}")
-        db.update("insert into checkOutRecords (date, bookId, memberId) VALUES (${LocalDateTime.now()}, $bookId, $memberId)")
+        db.update("update bookList SET isAvailableToCheckOut = false where bookName = '${bookName}'")
+        db.update("insert into statusUpdateRecords (date, bookId, memberId) VALUES ('${LocalDateTime.now()}', ${results[0]}, ${results[1]})")
 
     }
 
+    fun returnBook(bookName: String, memberId: Int, bookId: Int) {
 
+        try {
+            db.update("update bookList SET isAvailableToCheckOut = true where bookName = '${bookName}'")
+            db.update("insert into statusUpdateRecords (date, bookId, memberId) VALUES ('${LocalDateTime.now()}', ${memberId}, ${bookId})")
+        } catch (e: Exception) {
+            println("error: ${e.message}")
+            throw Exception()
+        }
+    }
+
+    fun isCheckedOutById(memberId: Int, bookId: Int) : Boolean  {
+        println(memberId)
+        println(bookId)
+        println("select * from checkOutRecords where memberId = ${memberId} and bookId = ${bookId}")
+        println(db.query("select * from statusUpdateRecords where memberId = ${memberId} and bookId = ${bookId}")
+        {response, _ -> response.getInt("bookId")})
+        if (db.query("select * from statusUpdateRecords where memberId = ${memberId} and bookId = ${bookId}")
+            {response, _ -> response.getDate("date")}.size == 0) {
+            return false
+        }
+        return true
+    }
 
 }

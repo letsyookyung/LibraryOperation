@@ -1,17 +1,48 @@
-### Post "purcahse-book"
-POST http://localhost:8888/manager/purchase-book
+### POST "set total balance"
+POST http://localhost:8888/manager/purchase-book/set-total-balance?deposit=400000
+
+### POST "enroll(manager)"
+POST http://localhost:8888/enroll
 Content-Type: application/json
 
 {
-  "name" : "python",
-  "author" : "babab",
-  "price" : 20000,
-  "checkOutStatus" : false
+  "type" : "manager",
+  "loginId" : "ron",
+  "password" : "1234"
+}
+
+
+### POST "enroll(member)"
+POST http://localhost:8888/enroll
+Content-Type: application/json
+
+{
+  "type" : "member",
+  "loginId" : "hailey",
+  "password" : "1234"
+}
+
+### GET "GET BOOK LIST"
+GET http://localhost:8888/manager/get-book-list?findOnlyAvailable=false
+
+### POST "MANAGER/checkout
+POST http://localhost:8888/manager/update-book-list/checkOut?memberLoginId=ivy&bookName=kotlin
+
+### POST "MANAGER/return
+POST http://localhost:8888/manager/update-book-list/return?memberLoginId=ivy&bookName=kotlin
+
+
+### Post "purcahse-book"
+POST http://localhost:8888/manager/purchase-book/purchase
+Content-Type: application/json
+
+{
+  "name" : "kotlin",
+  "author" : "tom",
+  "price" : 18000,
+  "isAvailableToCheckOut" : true
 }
 
 ### GET "purchase book history"
 GET http://localhost:8888/manager/purchase-book/history
 
-
-### POST "set total balance"
-POST http://localhost:8888/manager/purchase-book/set-total-balance?deposit=200000

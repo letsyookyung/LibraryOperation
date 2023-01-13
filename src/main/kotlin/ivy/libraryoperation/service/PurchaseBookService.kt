@@ -49,8 +49,8 @@ class PurchaseBookService (private val db: JdbcTemplate) {
     }
 
     fun addInBookList(bookInfo: BookInfoModel) = db.update(
-        "insert into bookList (bookName, author, checkOutStatus) values " +
-                "('${bookInfo.name}', '${bookInfo.author}', ${bookInfo.checkOutStatus})")
+        "insert into bookList (bookName, author, isAvailableToCheckOut) values " +
+                "('${bookInfo.name}', '${bookInfo.author}', ${bookInfo.isAvailableToCheckOut})")
 
 
 
