@@ -1,4 +1,4 @@
-### POST "set total balance"
+### POST "MANAGER/set total balance"
 POST http://localhost:8888/manager/purchase-book/set-total-balance?deposit=400000
 
 ### POST "enroll(manager)"
@@ -11,38 +11,42 @@ Content-Type: application/json
   "password" : "1234"
 }
 
-
 ### POST "enroll(member)"
 POST http://localhost:8888/enroll
 Content-Type: application/json
 
 {
   "type" : "member",
-  "loginId" : "hailey",
+  "loginId" : "ivy",
   "password" : "1234"
 }
 
-### GET "GET BOOK LIST"
+### GET "MANAGER/GET BOOK LIST"
 GET http://localhost:8888/manager/get-book-list?findOnlyAvailable=false
 
+### GET "get status updeate records"
+GET http://localhost:8888/manager/get-status-update-records
+
 ### POST "MANAGER/checkout
-POST http://localhost:8888/manager/update-book-list/checkOut?memberLoginId=ivy&bookName=kotlin
+POST http://localhost:8888/manager/update-book-list/checkOut?memberLoginId=ivy&bookName=python
 
 ### POST "MANAGER/return
-POST http://localhost:8888/manager/update-book-list/return?memberLoginId=ivy&bookName=kotlin
+POST http://localhost:8888/manager/update-book-list/return?memberLoginId=hailey&bookName=python
 
-
-### Post "purcahse-book"
+### Post "MANAGER/purcahse-book"
 POST http://localhost:8888/manager/purchase-book/purchase
 Content-Type: application/json
 
 {
-  "name" : "kotlin",
-  "author" : "tom",
-  "price" : 18000,
+  "name" : "javascript",
+  "author" : "tomas",
+  "price" : 11000,
   "isAvailableToCheckOut" : true
 }
 
-### GET "purchase book history"
+### GET "MANAGER/purchase book history"
 GET http://localhost:8888/manager/purchase-book/history
 
+
+### POST "MEMBER/get my status update records"
+POST http://localhost:8888/member/get-my-status-update-records?memberLoginId=hailey

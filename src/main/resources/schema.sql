@@ -2,21 +2,19 @@ create table if not exists Library.bookList
 (
     bookName           text    not null,
     author         text    not null,
-    checkOutStatus BOOLEAN not null
+    price   int     not null,
+    isAvailableToCheckOut BOOLEAN not null
 );
 
-create table if not exists Library.checkOutRecords
+create table if not exists Library.statusUpdateRecords
 (
     date     datetime not null,
     bookId   int      not null,
-    memberId int      not null
-);
+    bookName   text      not null,
+    memberId    int      not null,
+    memberLoginId   text      not null,
+    isReturned    BOOLEAN null
 
-create table if not exists Library.returnRecords
-(
-    date     datetime not null,
-    bookId   int      not null,
-    memberId int      not null
 );
 
 create table if not exists Library.members

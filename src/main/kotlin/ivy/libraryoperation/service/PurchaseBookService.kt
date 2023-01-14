@@ -11,14 +11,20 @@ class PurchaseBookService (private val db: JdbcTemplate) {
 
     fun depositIntoAccount(deposit: Int) {
         val today = LocalDateTime.now()
-        db.update("insert into totalBalance values (?, ?) ", deposit, today)
+        db.update("insert into totalBalance values (?, ?) ", today, deposit)
     }
 
 
     fun purchaseBook(bookInfo: BookInfoModel) : BookInfoModel {
         val today = LocalDateTime.now()
-        val priorTotalBalance = db.query("select totalBalance from totalBalance order by date desc limit 1")
-        {response, _ -> response.getInt("totalBalance")}[0]
+        var priorTotalBalance: Int = 0
+        try {
+            priorTotalBalance = db.query("select totalBalance from totalBalance order by date desc limit 1")
+            {response, _ -> response.getInt("totalBalance")}[0]
+        } catch (e: IndexOutOfBoundsException) {
+            println("error: set total balance 필요 ${e.message} ")
+            throw IndexOutOfBoundsException()
+        }
 
         if ((priorTotalBalance- bookInfo.price) <= 0) {
             throw RuntimeException("도서 가격 비쌈")
@@ -31,14 +37,14 @@ class PurchaseBookService (private val db: JdbcTemplate) {
     }
 
 
-    fun findPurchaseHistory() : List<PurchaseBookHistoryModel> = db.query(
-        "select * from purchaseHistory") {response, _ ->
-        PurchaseBookHistoryModel(response.getDate("date"),
-            response.getInt("bookId"),
-            response.getString("bookName"),
-            response.getString("author"),
-            response.getInt("price"),
-            response.getInt("remainingTotalBalance"))
+    fun findPurchaseHistory() : List<PurchaseBookHistoryModel> = db.query("select * from purchaseHistory")
+        {response, _ ->
+            PurchaseBookHistoryModel(response.getDate("date"),
+                response.getInt("bookId"),
+                response.getString("bookName"),
+                response.getString("author"),
+                response.getInt("price"),
+                response.getInt("remainingTotalBalance"))
     }
 
 
@@ -49,8 +55,8 @@ class PurchaseBookService (private val db: JdbcTemplate) {
     }
 
     fun addInBookList(bookInfo: BookInfoModel) = db.update(
-        "insert into bookList (bookName, author, isAvailableToCheckOut) values " +
-                "('${bookInfo.name}', '${bookInfo.author}', ${bookInfo.isAvailableToCheckOut})")
+        "insert into bookList (bookName, author, price, isAvailableToCheckOut) values " +
+                "('${bookInfo.name}', '${bookInfo.author}', '${bookInfo.price}', ${bookInfo.isAvailableToCheckOut})")
 
 
 

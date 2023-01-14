@@ -1,35 +1,44 @@
 package ivy.libraryoperation.controller
 
-import ivy.libraryoperation.model.BookInfoModel
-import ivy.libraryoperation.model.EnrollInfoModel
-import ivy.libraryoperation.model.PurchaseBookHistoryModel
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
+import ivy.libraryoperation.model.*
 import ivy.libraryoperation.service.CommonService
 import ivy.libraryoperation.service.PurchaseBookService
+import ivy.libraryoperation.service.SearchBookService
 import ivy.libraryoperation.service.UpdateBookListService
+
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.bind.annotation.*
 import org.springframework.dao.DuplicateKeyException
 import java.sql.SQLSyntaxErrorException
-import kotlin.math.log
+
 
 @RestController
-//@RequestMapping("/mode")
 class LibraryOperationController (
     private val db: JdbcTemplate,
     private val purchaseBookService: PurchaseBookService,
     private val commonService: CommonService,
     private val updateBookListService: UpdateBookListService,
+    private val searchBookService: SearchBookService,
 ) {
 
     data class ResponseModel(val isSuccess: Boolean? = false, val result: String?)
 
-    @PostMapping("/enroll")
+    @Tag(name = "MANAGER MODE", description = "Only available for managers")
+    @PostMapping("/manager/enroll")
+    @Operation(description = " Write 'manager' or 'member' in *type* field. ")
     fun enroll(@RequestBody enrollInfo: EnrollInfoModel) : ResponseModel {
-        // 아이디 중복 체크
         try {
             when (enrollInfo.type) {
-                "manager" -> db.update("insert into managers (loginId, password) values ('${enrollInfo.loginId}', '${enrollInfo.password}')")
-                "member" -> db.update("insert into members (loginId, password) values ('${enrollInfo.loginId}', '${enrollInfo.password}')")
+                "manager" -> {
+                    if (commonService.isValidManager(enrollInfo.loginId)) return ResponseModel(false, "아이디중복")
+                    db.update("insert into managers (loginId, password) values ('${enrollInfo.loginId}', '${enrollInfo.password}')")
+                }
+                "member" -> {
+                    if (commonService.isValidMember(enrollInfo.loginId)) return ResponseModel(false, "아이디중복")
+                    db.update("insert into members (loginId, password) values ('${enrollInfo.loginId}', '${enrollInfo.password}')")
+                }
             }
         } catch (e: SQLSyntaxErrorException) {
             println("error: ${e.message}")
@@ -45,10 +54,15 @@ class LibraryOperationController (
         return ResponseModel(true, "아이디 저장함")
     }
 
-    // manager mode
-    @GetMapping("/manager/get-book-list")  //findOnlyAvailable : 대여 가능한 책들만 보기
+    @Tag(name = "MANAGER MODE")
+    @GetMapping("/manager/get-book-list")
     fun findBookList(@RequestParam findOnlyAvailable: Boolean) : List<BookInfoModel> = commonService.findBookList(findOnlyAvailable)
-//
+
+    @Tag(name = "MANAGER MODE")
+    @GetMapping("/manager/get-status-update-records")
+    fun findStatusUpdateRecords() : List<StatusUpdateRecordsModel> = commonService.findStatusUpdateRecords()
+
+    @Tag(name = "MANAGER MODE")
     @PostMapping("/manager/update-book-list/checkOut")
     fun checkOutBook(@RequestParam memberLoginId: String, bookName: String) : ResponseModel {
         val mode = "checkOut"
@@ -61,9 +75,10 @@ class LibraryOperationController (
 
         updateBookListService.checkOutBook(memberLoginId, bookName)
 
-        return ResponseModel(true, "${memberLoginId} 님,${bookName} 대여 완료")
+        return ResponseModel(true, "$memberLoginId 님, $bookName 대여 완료")
     }
 
+    @Tag(name = "MANAGER MODE")
     @PostMapping("/manager/update-book-list/return")
     fun returnBook(@RequestParam memberLoginId: String, bookName: String) : ResponseModel {
         val mode = "return"
@@ -79,31 +94,48 @@ class LibraryOperationController (
 
         if (!updateBookListService.isCheckedOutById(memberId, bookId)) return ResponseModel(false, "해당 도서를 대여하고 있지 않음")
 
-        updateBookListService.returnBook(bookName, memberId, bookId)
+        updateBookListService.returnBook(memberId, memberLoginId, bookId, bookName)
 
-        return ResponseModel(true, "${memberLoginId} 님, ${bookName} 반납 완료")
+        return ResponseModel(true, "$memberLoginId 님, $bookName 반납 완료")
     }
 
+    @Tag(name = "MANAGER MODE")
     @PostMapping("/manager/purchase-book/set-total-balance")
     fun setBalance(@RequestParam deposit: Int) = purchaseBookService.depositIntoAccount(deposit)
 
+    @Tag(name = "MANAGER MODE")
     @PostMapping("/manager/purchase-book/purchase")
     fun purchase(@RequestBody bookInfo: BookInfoModel): BookInfoModel = purchaseBookService.purchaseBook(bookInfo)
 
+    @Tag(name = "MANAGER MODE")
     @GetMapping("/manager/purchase-book/history")
     fun findHistory(): List<PurchaseBookHistoryModel> = purchaseBookService.findPurchaseHistory()
 
 
+    @Tag(name = "MEMBER MODE", description = "Only available for members")
+    @PostMapping("/member/get-my-status-update-records")
+    fun findStatusUpdateRecordById(@RequestParam memberLoginId: String) : List<StatusUpdateRecordsModel> = commonService.findStatusUpdateRecordsById(memberLoginId)
+
+    @Tag(name = "MEMBER MODE")
+    @PostMapping("/member/search-book/")
+    @Operation(description = "You can write book name and author name together or either one of them.")
+    fun searchBook(@RequestBody searchInfo: SearchInfoModel) : Any {
+
+        if ((searchInfo.bookName != null) && (searchInfo.author == "")) {
+            if (!commonService.isValidBook(searchInfo.bookName)) return ResponseModel(false, "해당 제목의 도서없음")
+            return searchBookService.byBookName(searchInfo.bookName)
+        }
+        else if ((searchInfo.bookName == "") && (searchInfo.author != null)) {
+            if (!commonService.isValidAuthor(searchInfo.author)) return ResponseModel(false, "해당 저자의 도서없음")
+            return searchBookService.byAuthor(searchInfo.author)
+        }
+        else if ((searchInfo.bookName != null) && (searchInfo.author != null))
 
 
-    // member mode
-//    @PostMapping("/member/get-my-check-out-status")
-//
-//    @PostMapping("/member/search-book")
-//
-//    @PostMapping("/member/borrow-book")
-//
-//    @PostMapping("/member/return-book")
+        return ResponseModel(false, "도서명 혹은 저자명 중 하나는 입력해야 함.")
+
+    }
+
 
 
 }

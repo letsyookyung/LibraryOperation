@@ -1,6 +1,6 @@
 package ivy.libraryoperation.service
 
-import ivy.libraryoperation.model.BookInfoModel
+import ivy.libraryoperation.model.StatusUpdateRecordsModel
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -13,16 +13,20 @@ class UpdateBookListService (
     fun checkOutBook(memberLoginId: String, bookName: String) {
         val results = commonService.findMatchingNumberedID(memberLoginId, bookName)
 
+        val bookId = results[0]
+        val memberId = results[1]
+
         db.update("update bookList SET isAvailableToCheckOut = false where bookName = '${bookName}'")
-        db.update("insert into statusUpdateRecords (date, bookId, memberId) VALUES ('${LocalDateTime.now()}', ${results[0]}, ${results[1]})")
+        db.update("insert into statusUpdateRecords (date, bookId, bookName, memberId, memberLoginId, isReturned) VALUES " +
+                "('${LocalDateTime.now()}', ${bookId}, '${bookName}', ${memberId}, '${memberLoginId}', false)")
 
     }
 
-    fun returnBook(bookName: String, memberId: Int, bookId: Int) {
-
+    fun returnBook(memberId: Int, memberLoginId:String, bookId: Int, bookName: String) {
         try {
             db.update("update bookList SET isAvailableToCheckOut = true where bookName = '${bookName}'")
-            db.update("insert into statusUpdateRecords (date, bookId, memberId) VALUES ('${LocalDateTime.now()}', ${memberId}, ${bookId})")
+            db.update("insert into statusUpdateRecords (date, bookId, bookName, memberId, memberLoginId, isReturned) VALUES " +
+                    "('${LocalDateTime.now()}', ${bookId}, '${bookName}', ${memberId}, '${memberLoginId}', true )")
         } catch (e: Exception) {
             println("error: ${e.message}")
             throw Exception()
@@ -30,12 +34,7 @@ class UpdateBookListService (
     }
 
     fun isCheckedOutById(memberId: Int, bookId: Int) : Boolean  {
-        println(memberId)
-        println(bookId)
-        println("select * from checkOutRecords where memberId = ${memberId} and bookId = ${bookId}")
-        println(db.query("select * from statusUpdateRecords where memberId = ${memberId} and bookId = ${bookId}")
-        {response, _ -> response.getInt("bookId")})
-        if (db.query("select * from statusUpdateRecords where memberId = ${memberId} and bookId = ${bookId}")
+        if (db.query("select * from statusUpdateRecords where memberId = '$memberId' and bookId = '$bookId' and isReturned = false")
             {response, _ -> response.getDate("date")}.size == 0) {
             return false
         }
