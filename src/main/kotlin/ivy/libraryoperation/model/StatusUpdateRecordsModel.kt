@@ -1,6 +1,7 @@
 package ivy.libraryoperation.model
 
-import java.util.Date
+import java.sql.Date
+
 
 data class StatusUpdateRecordsModel(
 

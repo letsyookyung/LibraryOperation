@@ -2,8 +2,8 @@ package ivy.libraryoperation.model
 
 data class SearchInfoModel(
 
-    val bookName: String?,
+    var bookName: String? = null,
 
-    val author: String?
+    var author: String? = null,
 
 )

@@ -1,5 +1,5 @@
 ### POST "MANAGER/set total balance"
-POST http://localhost:8888/manager/purchase-book/set-total-balance?deposit=400000
+POST http://localhost:8888/purchase-book/set-total-balance?deposit=400000
 
 ### POST "enroll(manager)"
 POST http://localhost:8888/enroll
@@ -22,19 +22,19 @@ Content-Type: application/json
 }
 
 ### GET "MANAGER/GET BOOK LIST"
-GET http://localhost:8888/manager/get-book-list?findOnlyAvailable=false
+GET http://localhost:8888/get-book-list?findOnlyAvailable=false
 
 ### GET "get status updeate records"
-GET http://localhost:8888/manager/get-status-update-records
+GET http://localhost:8888/get-status-update-records
 
 ### POST "MANAGER/checkout
-POST http://localhost:8888/manager/update-book-list/checkOut?memberLoginId=ivy&bookName=python
+POST http://localhost:8888/update-book-list/checkOut?memberLoginId=ivy&bookName=python
 
 ### POST "MANAGER/return
-POST http://localhost:8888/manager/update-book-list/return?memberLoginId=hailey&bookName=python
+POST http://localhost:8888/update-book-list/return?memberLoginId=hailey&bookName=python
 
 ### Post "MANAGER/purcahse-book"
-POST http://localhost:8888/manager/purchase-book/purchase
+POST http://localhost:8888/purchase-book/purchase
 Content-Type: application/json
 
 {
@@ -45,7 +45,7 @@ Content-Type: application/json
 }
 
 ### GET "MANAGER/purchase book history"
-GET http://localhost:8888/manager/purchase-book/history
+GET http://localhost:8888/purchase-book/history
 
 
 ### POST "MEMBER/get my status update records"

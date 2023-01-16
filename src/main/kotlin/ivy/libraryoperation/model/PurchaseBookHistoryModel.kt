@@ -1,6 +1,5 @@
 package ivy.libraryoperation.model;
-import java.time.LocalDateTime
-import java.util.Date
+import java.sql.Date
 
 data class PurchaseBookHistoryModel(
 
