@@ -21,7 +21,7 @@ class ManagerController (
     private val searchBookService: SearchBookService,
 ) {
 
-    @DeleteMapping("/delete/{table}")
+    @DeleteMapping("/{table}")
     @Operation(description = " Existing db tables:\n - managers \n - members \n - purchaseHistory \n - statusUpdateRecords \n - totalBalance \n - bookList \n" )
     fun deleteTables(@PathVariable table: String): ResponseModel {
         db.update("delete from $table")
@@ -35,15 +35,28 @@ class ManagerController (
         try {
             when (type) {
                 "manager" -> run {
-                    if (dataValidationService.isValidManager(enrollInfo.loginId)) return ResponseModel(false, "아이디중복")
-                    enrollmentService.enrollManager(enrollInfo)
+                    return if (dataValidationService.isValidManager(enrollInfo.loginId)) {
+                        ResponseModel(
+                            false,
+                            "아이디중복"
+                        )
+                    } else {
+                        enrollmentService.enrollManager(enrollInfo)
+                    }
                 }
+
                 "member" -> run {
-                    if (dataValidationService.isValidMember(enrollInfo.loginId)) return ResponseModel(false, "아이디중복")
-                    return enrollmentService.enrollMember(enrollInfo)
+                    return if (dataValidationService.isValidMember(enrollInfo.loginId)) {
+                        ResponseModel(
+                            false,
+                            "아이디중복"
+                        )
+                    } else {
+                        enrollmentService.enrollMember(enrollInfo)
+                    }
                 }
             }
-        } catch (e: SQLSyntaxErrorException) {
+        }catch (e: SQLSyntaxErrorException) {
             println("error: ${e.message}")
             throw SQLSyntaxErrorException()
         } catch (e: DuplicateKeyException) {
@@ -58,21 +71,21 @@ class ManagerController (
     }
 
 
-    @PostMapping("/get-people-list")
+    @GetMapping("/people-list")
     @Operation(description = " Write 'manager' or 'member' in *type* field. ")
     fun getPeopleList(@RequestParam type: String): List<EnrollInfoModel> = enrollmentService.findPeopleList(type)
 
     
-    @GetMapping("/get-book-list")
+    @GetMapping("/book-list")
     fun findBookList(@RequestParam findOnlyAvailable: Boolean): List<BookInfoModel> = searchBookService.findBookList(findOnlyAvailable)
 
     
-    @GetMapping("/get-status-update-records")
+    @GetMapping("/status-update-records")
     fun findStatusUpdateRecords(): List<StatusUpdateRecordsModel> = updateBookListService.findStatusUpdateRecords()
 
 
     @PostMapping("/update-book-list/checkOut")
-    fun checkOutBook(@RequestParam memberLoginId: String, bookName: String) : ResponseModel {
+    fun checkOutBook(@RequestBody memberLoginId: String, bookName: String) : ResponseModel {
         val mode = "checkOut"
 
         if (!dataValidationService.isValidMember(memberLoginId)) return ResponseModel(false, "id없음")
@@ -88,7 +101,7 @@ class ManagerController (
 
 
     @PostMapping("/update-book-list/return")
-    fun returnBook(@RequestParam memberLoginId: String, bookName: String) : ResponseModel {
+    fun returnBook(@RequestBody memberLoginId: String, bookName: String) : ResponseModel {
         val mode = "return"
 
         if (!dataValidationService.isValidMember(memberLoginId)) return ResponseModel(false, "id없음")
@@ -109,7 +122,7 @@ class ManagerController (
 
 
     @PostMapping("/purchase-book/set-total-balance")
-    fun setBalance(@RequestParam deposit: Int) = purchaseBookService.depositIntoAccount(deposit)
+    fun setBalance(@RequestBody deposit: Int) = purchaseBookService.depositIntoAccount(deposit)
 
 
     @PostMapping("/purchase-book/purchase")
