@@ -8,12 +8,14 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.bind.annotation.*
 import org.springframework.http.ResponseEntity
 import org.springframework.http.HttpStatus
+import kotlin.math.log
 
 
 @RestController
 @RequestMapping("/manager")
 class ManagerController (
     private val db: JdbcTemplate,
+    private val loginService: LoginService,
     private val enrollmentService: EnrollmentService,
     private val purchaseBookService: PurchaseBookService,
     private val dataValidationService: DataValidationService,
@@ -22,6 +24,10 @@ class ManagerController (
 ) {
 
     companion object {
+        private var availableToUseProgramFlag: Boolean = false
+        private val LOGIN_ID_ERROR_MESSAGE = "Manager 목록에 존재하지 않는 ID 입니다."
+        private val LOGIN_PWD_ERROR_MESSAGE = "ID는 존재하지만, 비밀번호가 틀립니다."
+        private val LOGIN_PLEASE = "Manager 모드로 로그인 후 이용해주세요."
         private val DUPLICATE_ID_ERROR_MESSAGE = "ID 중복."
         private val NO_ID_ERROR_MESSAGE = "존재하지 않는 ID 입니다."
         private val BOOK_NAME_ERROR_MESSAGE = "해당 도서 없음"
@@ -30,14 +36,24 @@ class ManagerController (
         private val NO_NECESSARY_TO_RETURN_ERROR_MESSAGE = "해당 ID는 도서를 대여하고 있지 않습니다."
         private val EXCEED_TOTAL_BALANCE_ERROR_MESSAGE = "도서 가격이 총 예산을 넘습니다."
         private val BOOK_PRICE_ERROR_MESSAGE = "도서 가격은 1000원 이상이어야 함"
-
-
-
     }
+
+    @PostMapping("/login")
+    fun login(@RequestBody loginInfo: LoginModel): ResponseEntity<ResponseModel> {
+        if (!loginService.isManager(loginInfo)) return ResponseEntity(ResponseModel(LOGIN_ID_ERROR_MESSAGE), HttpStatus.FORBIDDEN)
+
+        if (!loginService.isCorrectPassword((loginInfo))) return ResponseEntity(ResponseModel(LOGIN_PWD_ERROR_MESSAGE), HttpStatus.FORBIDDEN)
+
+        availableToUseProgramFlag = true
+
+        return ResponseEntity(HttpStatus.OK)
+    }
+
 
     @DeleteMapping("/{table}")
     @Operation(description = " Existing db tables:\n - managers \n - members \n - purchaseHistory \n - statusUpdateRecords \n - totalBalance \n - bookList \n")
     fun deleteTables(@PathVariable table: String): ResponseEntity<ResponseModel> {
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
 
         db.update("delete from $table")
 
@@ -48,6 +64,8 @@ class ManagerController (
     @PostMapping("/enroll")
     @Operation(description = " Write 'manager' or 'member' in *type* field. ")
     fun enroll(@RequestBody enrollInfo: EnrollInfoModel): ResponseEntity<ResponseModel> {
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
+
         when (enrollInfo.type) {
             "manager" -> {
                 if (!dataValidationService.isValidManager(enrollInfo.loginId)) {
@@ -65,26 +83,30 @@ class ManagerController (
                 }
             }
         }
-
         return ResponseEntity(HttpStatus.OK)
-
     }
 
 
     @GetMapping("/people-list")
     @Operation(description = " Write 'manager' or 'member' in *type* field. ")
     fun getPeopleList(@RequestParam type: String): ResponseEntity<ResponseModel> {
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
+
         return ResponseEntity(ResponseModel(enrollmentService.findPeopleList(type)), HttpStatus.OK)
     }
 
 
     @GetMapping("/book-list")
     fun findBookList(@RequestParam findOnlyAvailable: Boolean): ResponseEntity<ResponseModel> {
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
+
         return ResponseEntity(ResponseModel(searchBookService.findBookList(findOnlyAvailable)), HttpStatus.OK)
     }
 
     @GetMapping("/status-update-records")
     fun findStatusUpdateRecords(): ResponseEntity<ResponseModel> {
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
+
         return ResponseEntity(ResponseModel(updateBookListService.findStatusUpdateRecords()), HttpStatus.OK)
     }
 
@@ -93,11 +115,13 @@ class ManagerController (
     fun checkOutBook(@RequestBody checkOutInfoModel: CheckOutReturnInfoModel): ResponseEntity<ResponseModel> {
         val mode = "checkOut"
 
-            if (!dataValidationService.isValidMember(checkOutInfoModel.memberLoginId)) return ResponseEntity(ResponseModel(NO_ID_ERROR_MESSAGE), HttpStatus.OK) //체크
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
 
-            if (!dataValidationService.isValidBook(checkOutInfoModel.bookName)) return ResponseEntity(ResponseModel(BOOK_NAME_ERROR_MESSAGE), HttpStatus.OK) //체크
+        if (!dataValidationService.isValidMember(checkOutInfoModel.memberLoginId)) return ResponseEntity(ResponseModel(NO_ID_ERROR_MESSAGE), HttpStatus.OK) //체크
 
-            if (!dataValidationService.isAvailableToCheckOut(mode, checkOutInfoModel.bookName)) return ResponseEntity(ResponseModel(UNAVAILBLE_TO_CHECKOUT_ERROR_MESSAGE), HttpStatus.OK) //체크
+        if (!dataValidationService.isValidBook(checkOutInfoModel.bookName)) return ResponseEntity(ResponseModel(BOOK_NAME_ERROR_MESSAGE), HttpStatus.OK) //체크
+
+        if (!dataValidationService.isAvailableToCheckOut(mode, checkOutInfoModel.bookName)) return ResponseEntity(ResponseModel(UNAVAILBLE_TO_CHECKOUT_ERROR_MESSAGE), HttpStatus.OK) //체크
 
         updateBookListService.checkOutBook(checkOutInfoModel.memberLoginId, checkOutInfoModel.bookName)
 
@@ -109,6 +133,8 @@ class ManagerController (
     @PostMapping("/update-book-list/return")
     fun returnBook(@RequestBody returnInfoModel: CheckOutReturnInfoModel): ResponseEntity<ResponseModel> {
         val mode = "return"
+
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
 
         if (!dataValidationService.isValidMember(returnInfoModel.memberLoginId)) return ResponseEntity(ResponseModel(NO_ID_ERROR_MESSAGE), HttpStatus.OK) //체크
 
@@ -130,6 +156,8 @@ class ManagerController (
 
     @PostMapping("/purchase-book/set-total-balance")
     fun setBalance(@RequestBody deposit: Int): ResponseEntity<ResponseModel> {
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
+
         purchaseBookService.depositIntoAccount(deposit)
 
         return ResponseEntity(HttpStatus.OK)
@@ -138,6 +166,8 @@ class ManagerController (
 
     @PostMapping("/purchase-book/purchase")
     fun purchase(@RequestBody bookInfo: BookInfoModel): ResponseEntity<ResponseModel> {
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
+
         val priorTotalBalance: Int = db.query("select totalBalance from totalBalance order by date desc limit 1")
         { response, _ -> response.getInt("totalBalance") }[0]
 
@@ -156,6 +186,8 @@ class ManagerController (
 
     @GetMapping("/purchase-book/history")
     fun findHistory(): ResponseEntity<ResponseModel> {
+        if (!availableToUseProgramFlag) return ResponseEntity(ResponseModel(LOGIN_PLEASE), HttpStatus.OK)
+
         val response = ResponseModel(purchaseBookService.findPurchaseHistory())
 
         return ResponseEntity(response, HttpStatus.OK)
