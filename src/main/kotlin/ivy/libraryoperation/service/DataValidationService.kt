@@ -1,74 +1,53 @@
 package ivy.libraryoperation.service
 
-import ivy.libraryoperation.model.BookInfoModel
-import ivy.libraryoperation.model.EnrollInfoModel
-import ivy.libraryoperation.model.StatusUpdateRecordsModel
+import ivy.libraryoperation.handler.GlobalExceptionHandler
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import java.sql.SQLSyntaxErrorException
 
 @Service
-class DataValidationService(val db: JdbcTemplate) {
+class DataValidationService(
+    private val db: JdbcTemplate,
+) {
 
     fun isValidManager(loginId: String): Boolean {
-        try {
-            if (db.query("select * from managers where loginId = '${loginId}'") { response, _ ->
-                    response.getString("managerId")
-                }.size == 0)
-                return false
-        } catch (e: Exception) {
-            println(e.message)
-        }
+            val query = "select * from members where loginId = '${loginId}'"
+            if (db.query(query) { response, _ -> response.getString("managerId") }.size == 0) return false
 
         return true
     }
 
 
     fun isValidMember(loginId: String): Boolean {
-        try {
+
             val query = "select * from members where loginId = '${loginId}'"
             if (db.query(query) { response, _ -> response.getString("memberId")}.size == 0) return false
-        } catch (e: Exception) {
-            println(e.message)
-        }
 
         return true
     }
 
 
     fun isValidBook(bookName: String): Boolean {
-        try {
+
             val query = "select * from bookList where bookName = '${bookName}'"
             if (db.query(query) { response, _ -> response.getString("bookName") }.size >= 1) return true
-        } catch (e: SQLSyntaxErrorException) {
-            println("error: ${e.message}")
-            throw SQLSyntaxErrorException()
-        } catch (e: Exception) {
-            println("error: ${e.message}")
-            throw Exception()
-        }
+
         return false
     }
 
 
     fun isValidAuthor(author: String): Boolean {
-        try {
+
             val query = "select * from bookList where author = '${author}'"
             if (db.query(query) { response, _ -> response.getString("author") }.size >= 1) return true
-        } catch (e: SQLSyntaxErrorException) {
-            println("error: ${e.message}")
-            throw SQLSyntaxErrorException()
-        } catch (e: Exception) {
-            println("error: ${e.message}")
-            throw Exception()
-        }
+
         return false
     }
 
 
     fun isAvailableToCheckOut(mode: String, bookName: String): Boolean {
         var query = ""
-        try {
+
             when (mode) {
                 "checkOut" -> {
                     query = "select * from bookList where bookName = '${bookName}' and isAvailableToCheckOut = true"
@@ -80,13 +59,7 @@ class DataValidationService(val db: JdbcTemplate) {
                     if (db.query(query) { response, _ -> response.getString("bookName") }.size >= 1) return true
                 }
             }
-        } catch (e: SQLSyntaxErrorException) {
-            println("error: ${e.message}")
-            throw SQLSyntaxErrorException()
-        } catch (e: Exception) {
-            println("error: ${e.message}")
-            throw Exception()
-        }
+
         return false
     }
 

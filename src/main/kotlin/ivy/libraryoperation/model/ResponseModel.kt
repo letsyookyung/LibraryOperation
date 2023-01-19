@@ -1,12 +1,14 @@
 package ivy.libraryoperation.model
 
-data class ResponseModel(
+import com.fasterxml.jackson.annotation.JsonProperty
 
-    val isSuccess: Boolean? = false,
+data class ResponseModel (
 
-    val result: String?
+//    @JsonProperty("error-message")
+//    var errorMessage: String? = null,
+
+    @JsonProperty("result")
+    var result: Any? = "success!",
 
 )
-
-
 

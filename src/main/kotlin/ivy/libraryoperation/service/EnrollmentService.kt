@@ -1,25 +1,19 @@
 package ivy.libraryoperation.service
 
-import ivy.libraryoperation.controller.ManagerController
 import ivy.libraryoperation.model.EnrollInfoModel
-import ivy.libraryoperation.model.ResponseModel
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 
 @Service
 class EnrollmentService(val db: JdbcTemplate) {
 
-    fun enrollManager(enrollInfo: EnrollInfoModel): ResponseModel {
+    fun enrollManager(enrollInfo: EnrollInfoModel) {
         db.update("insert into managers (loginId, password) values ('${enrollInfo.loginId}', '${enrollInfo.password}')")
-
-        return ResponseModel(true, enrollInfo.toString())
     }
 
 
-    fun enrollMember(enrollInfo: EnrollInfoModel): ResponseModel  {
+    fun enrollMember(enrollInfo: EnrollInfoModel) {
         db.update("insert into members (loginId, password) values ('${enrollInfo.loginId}', '${enrollInfo.password}')")
-
-        return ResponseModel(true, enrollInfo.toString())
     }
 
 

@@ -1,5 +1,12 @@
 ### POST "MANAGER/set total balance"
-POST http://localhost:8888/purchase-book/set-total-balance?deposit=400000
+POST http://localhost:8888/purchase-book/set-total-balance?
+Content-Type: application/json
+
+{
+  "deposit" : "manager",
+  "loginId" : "ron",
+  "password" : "1234"
+}
 
 ### POST "enroll(manager)"
 POST http://localhost:8888/enroll

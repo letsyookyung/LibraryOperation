@@ -6,4 +6,7 @@ data class EnrollInfoModel(
 
     val password: String = ""
 
-    )
+    ) {
+
+    val type: String? = null
+}

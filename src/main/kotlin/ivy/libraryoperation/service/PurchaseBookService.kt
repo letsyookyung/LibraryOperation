@@ -17,13 +17,12 @@ class PurchaseBookService (private val db: JdbcTemplate) {
     }
 
 
-    fun purchaseBook(bookInfo: BookInfoModel, priorTotalBalance: Int): ResponseModel {
+    fun purchaseBook(bookInfo: BookInfoModel, priorTotalBalance: Int) {
         val today = LocalDateTime.now()
 
         addInPurchaseHistory(bookInfo, today, priorTotalBalance)
         addInBookList(bookInfo)
 
-        return ResponseModel(true, bookInfo.toString())
     }
 
 

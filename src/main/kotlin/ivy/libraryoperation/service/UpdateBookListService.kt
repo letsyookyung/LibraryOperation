@@ -25,16 +25,11 @@ class UpdateBookListService (
 
 
     fun returnBook(memberId: Int, memberLoginId:String, bookId: Int, bookName: String) {
-        try {
-            db.update("update bookList SET isAvailableToCheckOut = true where bookName = '${bookName}'")
+        db.update("update bookList SET isAvailableToCheckOut = true where bookName = '${bookName}'")
 
-            db.update("insert into statusUpdateRecords (date, bookId, bookName, memberId, memberLoginId, isReturned) VALUES " +
-                    "('${LocalDateTime.now()}', ${bookId}, '${bookName}', ${memberId}, '${memberLoginId}', true )")
+        db.update("insert into statusUpdateRecords (date, bookId, bookName, memberId, memberLoginId, isReturned) VALUES " +
+                "('${LocalDateTime.now()}', ${bookId}, '${bookName}', ${memberId}, '${memberLoginId}', true )")
 
-        } catch (e: Exception) {
-            println("error: ${e.message}")
-            throw Exception()
-        }
     }
 
 

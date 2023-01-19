@@ -6,8 +6,8 @@ import ivy.libraryoperation.service.*
 
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.web.bind.annotation.*
-import org.springframework.dao.DuplicateKeyException
-import java.sql.SQLSyntaxErrorException
+import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpStatus
 
 
 @RestController
@@ -21,136 +21,145 @@ class ManagerController (
     private val searchBookService: SearchBookService,
 ) {
 
+    companion object {
+        private val DUPLICATE_ID_ERROR_MESSAGE = "ID 중복."
+        private val NO_ID_ERROR_MESSAGE = "존재하지 않는 ID 입니다."
+        private val BOOK_NAME_ERROR_MESSAGE = "해당 도서 없음"
+        private val UNAVAILBLE_TO_CHECKOUT_ERROR_MESSAGE = "해당 도서의 대여 가능 수량이 0 입니다."
+        private val UNAVAILABLE_TO_RETURN_ERROR_MESSAGE = "해당 도서의 반납 대기 수량이 0 입니다."
+        private val NO_NECESSARY_TO_RETURN_ERROR_MESSAGE = "해당 ID는 도서를 대여하고 있지 않습니다."
+        private val EXCEED_TOTAL_BALANCE_ERROR_MESSAGE = "도서 가격이 총 예산을 넘습니다."
+        private val BOOK_PRICE_ERROR_MESSAGE = "도서 가격은 1000원 이상이어야 함"
+
+
+
+    }
+
     @DeleteMapping("/{table}")
-    @Operation(description = " Existing db tables:\n - managers \n - members \n - purchaseHistory \n - statusUpdateRecords \n - totalBalance \n - bookList \n" )
-    fun deleteTables(@PathVariable table: String): ResponseModel {
+    @Operation(description = " Existing db tables:\n - managers \n - members \n - purchaseHistory \n - statusUpdateRecords \n - totalBalance \n - bookList \n")
+    fun deleteTables(@PathVariable table: String): ResponseEntity<ResponseModel> {
+
         db.update("delete from $table")
-        return ResponseModel(true, "$table 내용 모두 삭제")
+
+        return ResponseEntity(HttpStatus.OK)
     }
 
 
     @PostMapping("/enroll")
     @Operation(description = " Write 'manager' or 'member' in *type* field. ")
-    fun enroll(@RequestParam type: String, @RequestBody enrollInfo: EnrollInfoModel): ResponseModel {
-        try {
-            when (type) {
-                "manager" -> run {
-                    return if (dataValidationService.isValidManager(enrollInfo.loginId)) {
-                        ResponseModel(
-                            false,
-                            "아이디중복"
-                        )
-                    } else {
-                        enrollmentService.enrollManager(enrollInfo)
-                    }
-                }
-
-                "member" -> run {
-                    return if (dataValidationService.isValidMember(enrollInfo.loginId)) {
-                        ResponseModel(
-                            false,
-                            "아이디중복"
-                        )
-                    } else {
-                        enrollmentService.enrollMember(enrollInfo)
-                    }
+    fun enroll(@RequestBody enrollInfo: EnrollInfoModel): ResponseEntity<ResponseModel> {
+        when (enrollInfo.type) {
+            "manager" -> {
+                if (!dataValidationService.isValidManager(enrollInfo.loginId)) {
+                    enrollmentService.enrollManager(enrollInfo)
+                } else {
+                    return ResponseEntity(ResponseModel(DUPLICATE_ID_ERROR_MESSAGE), HttpStatus.FORBIDDEN) //체크
                 }
             }
-        }catch (e: SQLSyntaxErrorException) {
-            println("error: ${e.message}")
-            throw SQLSyntaxErrorException()
-        } catch (e: DuplicateKeyException) {
-            println("error: $e")
-            return ResponseModel(false, "중복된 numbered id")
-        } catch (e: Exception) {
-            println("error: ${e.message}")
-            throw Exception()
+
+            "member" -> {
+                if (!dataValidationService.isValidMember(enrollInfo.loginId)) {
+                    enrollmentService.enrollMember(enrollInfo)
+                } else {
+                    return ResponseEntity(ResponseModel(DUPLICATE_ID_ERROR_MESSAGE), HttpStatus.FORBIDDEN) //체크
+                }
+            }
         }
 
-        return ResponseModel(true, "아이디 저장함")
+        return ResponseEntity(HttpStatus.OK)
+
     }
 
 
     @GetMapping("/people-list")
     @Operation(description = " Write 'manager' or 'member' in *type* field. ")
-    fun getPeopleList(@RequestParam type: String): List<EnrollInfoModel> = enrollmentService.findPeopleList(type)
+    fun getPeopleList(@RequestParam type: String): ResponseEntity<ResponseModel> {
+        return ResponseEntity(ResponseModel(enrollmentService.findPeopleList(type)), HttpStatus.OK)
+    }
 
-    
+
     @GetMapping("/book-list")
-    fun findBookList(@RequestParam findOnlyAvailable: Boolean): List<BookInfoModel> = searchBookService.findBookList(findOnlyAvailable)
+    fun findBookList(@RequestParam findOnlyAvailable: Boolean): ResponseEntity<ResponseModel> {
+        return ResponseEntity(ResponseModel(searchBookService.findBookList(findOnlyAvailable)), HttpStatus.OK)
+    }
 
-    
     @GetMapping("/status-update-records")
-    fun findStatusUpdateRecords(): List<StatusUpdateRecordsModel> = updateBookListService.findStatusUpdateRecords()
+    fun findStatusUpdateRecords(): ResponseEntity<ResponseModel> {
+        return ResponseEntity(ResponseModel(updateBookListService.findStatusUpdateRecords()), HttpStatus.OK)
+    }
 
 
     @PostMapping("/update-book-list/checkOut")
-    fun checkOutBook(@RequestBody memberLoginId: String, bookName: String) : ResponseModel {
+    fun checkOutBook(@RequestBody checkOutInfoModel: CheckOutReturnInfoModel): ResponseEntity<ResponseModel> {
         val mode = "checkOut"
 
-        if (!dataValidationService.isValidMember(memberLoginId)) return ResponseModel(false, "id없음")
+            if (!dataValidationService.isValidMember(checkOutInfoModel.memberLoginId)) return ResponseEntity(ResponseModel(NO_ID_ERROR_MESSAGE), HttpStatus.OK) //체크
 
-        if (!dataValidationService.isValidBook(bookName)) return ResponseModel(false, "도서없음")
+            if (!dataValidationService.isValidBook(checkOutInfoModel.bookName)) return ResponseEntity(ResponseModel(BOOK_NAME_ERROR_MESSAGE), HttpStatus.OK) //체크
 
-        if (!dataValidationService.isAvailableToCheckOut(mode, bookName)) return ResponseModel(false, "대여중임")
+            if (!dataValidationService.isAvailableToCheckOut(mode, checkOutInfoModel.bookName)) return ResponseEntity(ResponseModel(UNAVAILBLE_TO_CHECKOUT_ERROR_MESSAGE), HttpStatus.OK) //체크
 
-        updateBookListService.checkOutBook(memberLoginId, bookName)
+        updateBookListService.checkOutBook(checkOutInfoModel.memberLoginId, checkOutInfoModel.bookName)
 
-        return ResponseModel(true, "$memberLoginId 님, $bookName 대여 완료")
+        return ResponseEntity(HttpStatus.OK)
+
     }
 
 
     @PostMapping("/update-book-list/return")
-    fun returnBook(@RequestBody memberLoginId: String, bookName: String) : ResponseModel {
+    fun returnBook(@RequestBody returnInfoModel: CheckOutReturnInfoModel): ResponseEntity<ResponseModel> {
         val mode = "return"
 
-        if (!dataValidationService.isValidMember(memberLoginId)) return ResponseModel(false, "id없음")
+        if (!dataValidationService.isValidMember(returnInfoModel.memberLoginId)) return ResponseEntity(ResponseModel(NO_ID_ERROR_MESSAGE), HttpStatus.OK) //체크
 
-        if (!dataValidationService.isValidBook(bookName)) return ResponseModel(false, "도서없음")
+        if (!dataValidationService.isValidBook(returnInfoModel.bookName)) return ResponseEntity(ResponseModel(BOOK_NAME_ERROR_MESSAGE), HttpStatus.OK) //체크
 
-        if (!dataValidationService.isAvailableToCheckOut(mode, bookName)) return ResponseModel(false, "대여중이 아님")
+        if (!dataValidationService.isAvailableToCheckOut(mode, returnInfoModel.bookName)) return ResponseEntity(ResponseModel(UNAVAILABLE_TO_RETURN_ERROR_MESSAGE), HttpStatus.OK) //체
 
-        val bookId = dataValidationService.findMatchingNumberedID(memberLoginId, bookName)[0]
-        val memberId = dataValidationService.findMatchingNumberedID(memberLoginId, bookName)[1]
 
-        if (!updateBookListService.isCheckedOutById(memberId, bookId)) return ResponseModel(false, "$memberLoginId 님, 해당 도서를 대여하고 있지 않음")
+        val bookId = dataValidationService.findMatchingNumberedID(returnInfoModel.memberLoginId, returnInfoModel.bookName)[0]
+        val memberId = dataValidationService.findMatchingNumberedID(returnInfoModel.memberLoginId, returnInfoModel.bookName)[1]
 
-        updateBookListService.returnBook(memberId, memberLoginId, bookId, bookName)
+        if (!updateBookListService.isCheckedOutById(memberId, bookId)) return ResponseEntity(ResponseModel(NO_NECESSARY_TO_RETURN_ERROR_MESSAGE), HttpStatus.OK) //체크
 
-        return ResponseModel(true, "$memberLoginId 님, $bookName 반납 완료")
+        updateBookListService.returnBook(memberId, returnInfoModel.memberLoginId, bookId, returnInfoModel.bookName)
+
+        return ResponseEntity(HttpStatus.OK)
     }
 
 
     @PostMapping("/purchase-book/set-total-balance")
-    fun setBalance(@RequestBody deposit: Int) = purchaseBookService.depositIntoAccount(deposit)
+    fun setBalance(@RequestBody deposit: Int): ResponseEntity<ResponseModel> {
+        purchaseBookService.depositIntoAccount(deposit)
+
+        return ResponseEntity(HttpStatus.OK)
+    }
 
 
     @PostMapping("/purchase-book/purchase")
-    fun purchase(@RequestBody bookInfo: BookInfoModel): ResponseModel {
-        var priorTotalBalance: Int
+    fun purchase(@RequestBody bookInfo: BookInfoModel): ResponseEntity<ResponseModel> {
+        val priorTotalBalance: Int = db.query("select totalBalance from totalBalance order by date desc limit 1")
+        { response, _ -> response.getInt("totalBalance") }[0]
 
-        try {
-            priorTotalBalance = db.query("select totalBalance from totalBalance order by date desc limit 1")
-            {response, _ -> response.getInt("totalBalance")}[0]
-        } catch (e: IndexOutOfBoundsException) {
-            println("error: set total balance 필요 ${e.message} ")
-            throw IndexOutOfBoundsException()
+        if ((priorTotalBalance - bookInfo.price) <= 0) {
+            return ResponseEntity(ResponseModel(EXCEED_TOTAL_BALANCE_ERROR_MESSAGE), HttpStatus.OK) //체크
+        } else if (bookInfo.price <= 1000) {
+            return ResponseEntity(ResponseModel(BOOK_PRICE_ERROR_MESSAGE), HttpStatus.OK) //체크
         }
 
-        if ((priorTotalBalance- bookInfo.price) <= 0) {
-            return ResponseModel(false, "도서 가격이 총 예산을 넘음")
-        } else if (bookInfo.price <= 1000 ) {
-            return ResponseModel(false, "도서 가격은 1000원 이상이어야 함")
-        }
+        purchaseBookService.purchaseBook(bookInfo, priorTotalBalance)
 
-        return purchaseBookService.purchaseBook(bookInfo, priorTotalBalance)
+        return ResponseEntity(HttpStatus.OK)
 
     }
 
 
     @GetMapping("/purchase-book/history")
-    fun findHistory(): List<PurchaseBookHistoryModel> = purchaseBookService.findPurchaseHistory()
+    fun findHistory(): ResponseEntity<ResponseModel> {
+        val response = ResponseModel(purchaseBookService.findPurchaseHistory())
 
+        return ResponseEntity(response, HttpStatus.OK)
+    }
 
 }
 
