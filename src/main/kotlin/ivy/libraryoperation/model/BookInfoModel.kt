@@ -1,11 +1,13 @@
 package ivy.libraryoperation.model;
 
-data class BookInfo(
-        val name: String,
+data class BookInfoModel(
 
-        val author: String,
+        val name: String = "",
 
-        var price: Int,
+        val author: String? = "",
 
-        var checkOutStatus: Boolean = false
+        var price: Int = 0,
+
+        var isAvailableToCheckOut: Boolean = true
+
 )

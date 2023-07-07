@@ -1,0 +1,59 @@
+### POST "MANAGER/set total balance"
+POST http://localhost:8888/purchase-book/set-total-balance?
+Content-Type: application/json
+
+{
+  "deposit" : "manager",
+  "loginId" : "ron",
+  "password" : "1234"
+}
+
+### POST "enroll(manager)"
+POST http://localhost:8888/enroll
+Content-Type: application/json
+
+{
+  "type" : "manager",
+  "loginId" : "ron",
+  "password" : "1234"
+}
+
+### POST "enroll(member)"
+POST http://localhost:8888/enroll
+Content-Type: application/json
+
+{
+  "type" : "member",
+  "loginId" : "ivy",
+  "password" : "1234"
+}
+
+### GET "MANAGER/GET BOOK LIST"
+GET http://localhost:8888/get-book-list?findOnlyAvailable=false
+
+### GET "get status updeate records"
+GET http://localhost:8888/get-status-update-records
+
+### POST "MANAGER/checkout
+POST http://localhost:8888/update-book-list/checkOut?memberLoginId=ivy&bookName=python
+
+### POST "MANAGER/return
+POST http://localhost:8888/update-book-list/return?memberLoginId=hailey&bookName=python
+
+### Post "MANAGER/purcahse-book"
+POST http://localhost:8888/purchase-book/purchase
+Content-Type: application/json
+
+{
+  "name" : "javascript",
+  "author" : "tomas",
+  "price" : 11000,
+  "isAvailableToCheckOut" : true
+}
+
+### GET "MANAGER/purchase book history"
+GET http://localhost:8888/purchase-book/history
+
+
+### POST "MEMBER/get my status update records"
+POST http://localhost:8888/member/get-my-status-update-records?memberLoginId=hailey
